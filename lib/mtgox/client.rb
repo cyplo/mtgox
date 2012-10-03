@@ -1,6 +1,5 @@
 require 'faraday/error'
 require 'mtgox/ask'
-require 'mtgox/balance'
 require 'mtgox/bid'
 require 'mtgox/buy'
 require 'mtgox/connection'
@@ -36,14 +35,15 @@ module MtGox
     #   MtGox.ticker
     def ticker(currency)
       ticker = get('/api/0/data/ticker.php', "Currency" => currency)['ticker']
-      Ticker.instance.buy    = ticker['buy'].to_f
-      Ticker.instance.high   = ticker['high'].to_f
-      Ticker.instance.price  = ticker['last'].to_f
-      Ticker.instance.low    = ticker['low'].to_f
-      Ticker.instance.sell   = ticker['sell'].to_f
-      Ticker.instance.volume = ticker['vol'].to_f
-      Ticker.instance.vwap   = ticker['vwap'].to_f
-      Ticker.instance
+      t = Ticker.new
+      t.buy    = ticker['buy'].to_f
+      t.high   = ticker['high'].to_f
+      t.price  = ticker['last'].to_f
+      t.low    = ticker['low'].to_f
+      t.sell   = ticker['sell'].to_f
+      t.volume = ticker['vol'].to_f
+      t.vwap   = ticker['vwap'].to_f
+      t
     end
 
     # Fetch both bids and asks in one call, for network efficiency
@@ -141,7 +141,7 @@ module MtGox
     def balance
       ret = {}
       info["Wallets"].each {|currency, details|
-        ret[currency] = details["Balance"]["value"]
+        ret[currency] = details["Balance"]["value"].to_r
       }
       ret
     end
@@ -253,7 +253,6 @@ module MtGox
     def parse_orders(orders)
       buys = []
       sells = []
-      puts orders.size
       orders.sort_by{|order| order['date']}.each do |order|
         case order['type']
         when ORDER_TYPES[:sell]
