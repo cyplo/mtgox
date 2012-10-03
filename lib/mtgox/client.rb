@@ -34,8 +34,8 @@ module MtGox
     # @return [MtGox::Ticker]
     # @example
     #   MtGox.ticker
-    def ticker
-      ticker = get('/api/0/data/ticker.php')['ticker']
+    def ticker(currency)
+      ticker = get('/api/0/data/ticker.php', "Currency" => currency)['ticker']
       Ticker.instance.buy    = ticker['buy'].to_f
       Ticker.instance.high   = ticker['high'].to_f
       Ticker.instance.price  = ticker['last'].to_f
@@ -51,9 +51,9 @@ module MtGox
     # @authenticated false
     # @return [Hash] with keys :asks and :asks, which contain arrays as described in {MtGox::Client#asks} and {MtGox::Clients#bids}
     # @example
-    #   MtGox.offers
-    def offers
-      offers = get('/api/0/data/getDepth.php')
+    #   MtGox.offers(currency)
+    def offers(currency)
+      offers = get('/api/0/data/getDepth.php', "Currency" => currency)
       asks = offers['asks'].sort_by do |ask|
         ask[0].to_f
       end.map! do |ask|
@@ -73,8 +73,8 @@ module MtGox
     # @return [Array<MtGox::Ask>] an array of open asks, sorted in price ascending order
     # @example
     #   MtGox.asks
-    def asks
-      offers[:asks]
+    def asks(currency)
+      offers(currency)[:asks]
     end
 
     # Fetch open bids
@@ -83,8 +83,8 @@ module MtGox
     # @return [Array<MtGox::Bid>] an array of open bids, sorted in price descending order
     # @example
     #   MtGox.bids
-    def bids
-      offers[:bids]
+    def bids(currency)
+      offers(currency)[:bids]
     end
 
     # Fetch the lowest priced ask
@@ -93,11 +93,13 @@ module MtGox
     # @return [MtGox::MinAsk]
     # @example
     #   MtGox.min_ask
-    def min_ask
-      min_ask = asks.first
-      MinAsk.instance.price = min_ask.price
-      MinAsk.instance.amount = min_ask.amount
-      MinAsk.instance
+    def min_ask(currency)
+      min_ask = asks(currency).first
+      m = MinAsk.new
+      m.price = min_ask.price
+      m.amount = min_ask.amount
+      m.currency = currency
+      m
     end
 
     # Fetch the highest priced bid
@@ -106,11 +108,13 @@ module MtGox
     # @return [MtGox::MinBid]
     # @example
     #   MtGox.max_bid
-    def max_bid
+    def max_bid(currency)
       max_bid = bids.first
-      MaxBid.instance.price = max_bid.price
-      MaxBid.instance.amount = max_bid.amount
-      MaxBid.instance
+      m = MaxBid.new
+      m.price = max_bid.price
+      m.amount = max_bid.amount
+      m.currency = currency
+      m
     end
 
     # Fetch recent trades
@@ -119,20 +123,27 @@ module MtGox
     # @return [Array<MtGox::Trade>] an array of trades, sorted in chronological order
     # @example
     #   MtGox.trades
-    def trades
-      get('/api/0/data/getTrades.php').sort_by{|trade| trade['date']}.map do |trade|
-        Trade.new(trade)
+    def trades(currency)
+      get('/api/0/data/getTrades.php', {'Currency' => currency}).sort_by{|trade| trade['date']}.map do |trade|
+        Trade.new(trade, currency)
       end
     end
 
-    # Fetch your current balance
+    # Fetch your info
     #
     # @authenticated true
-    # @return [Array<MtGox::Balance>]
     # @example
-    #   MtGox.balance
+    #   MtGox.getinfo
+    def info
+      post('/api/0/info.php')
+    end
+
     def balance
-      parse_balance(post('/api/0/getFunds.php', {}))
+      ret = {}
+      info["Wallets"].each {|currency, details|
+        ret[currency] = details["Balance"]["value"]
+      }
+      ret
     end
 
     # Fetch your open orders, both buys and sells, for network efficiency
@@ -142,7 +153,7 @@ module MtGox
     # @example
     #   MtGox.orders
     def orders
-      parse_orders(post('/api/0/getOrders.php', {})['orders'])
+      parse_orders(post('/api/0/getOrders.php')['orders'])
     end
 
     # Fetch your open buys
@@ -174,8 +185,8 @@ module MtGox
     # @example
     #   # Buy one bitcoin for $0.011
     #   MtGox.buy! 1.0, 0.011
-    def buy!(amount, price)
-      parse_orders(post('/api/0/buyBTC.php', {:amount => amount, :price => price})['orders'])
+    def buy!(amount, price, currency)
+      parse_orders(post('/api/0/buyBTC.php', {:amount => amount, :price => price, "Currency" => currency})['orders'])
     end
 
     # Place a limit order to sell BTC
@@ -187,8 +198,8 @@ module MtGox
     # @example
     #   # Sell one bitcoin for $100
     #   MtGox.sell! 1.0, 100.0
-    def sell!(amount, price)
-      parse_orders(post('/api/0/sellBTC.php', {:amount => amount, :price => price})['orders'])
+    def sell!(amount, price, currency)
+      parse_orders(post('/api/0/sellBTC.php', {:amount => amount, :price => price, :currency => currency})['orders'])
     end
 
     # Cancel an open order
@@ -213,7 +224,7 @@ module MtGox
         order = args.delete_if{|k, v| !['oid', 'type'].include?(k.to_s)}
         parse_orders(post('/api/0/cancelOrder.php', order)['orders'])
       else
-        orders = post('/api/0/getOrders.php', {})['orders']
+        orders = post('/api/0/getOrders.php', {})['orders'] # is this OK for multicurrency?
         order = orders.find{|order| order['oid'] == args.to_s}
         if order
           order = order.delete_if{|k, v| !['oid', 'type'].include?(k.to_s)}
@@ -239,22 +250,18 @@ module MtGox
 
     private
 
-    def parse_balance(balance)
-      balances = []
-      balances << Balance.new('BTC', balance['btcs'])
-      balances << Balance.new('USD', balance['usds'])
-      balances
-    end
-
     def parse_orders(orders)
       buys = []
       sells = []
+      puts orders.size
       orders.sort_by{|order| order['date']}.each do |order|
         case order['type']
         when ORDER_TYPES[:sell]
-          sells << Sell.new(order)
+          s = Sell.new(order)
+          sells << s
         when ORDER_TYPES[:buy]
-          buys << Buy.new(order)
+          b = Buy.new(order)
+          buys << b
         end
       end
       {:buys => buys, :sells => sells}

@@ -9,6 +9,7 @@ module MtGox
       self.date   = Time.at(order['date'].to_i)
       self.amount = order['amount'].to_f
       self.price  = order['price'].to_f
+      self.currency = order['currency']
     end
   end
 end

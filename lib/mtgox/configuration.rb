@@ -9,7 +9,7 @@ module MtGox
       :secret,
     ]
 
-    DEFAULT_COMMISSION = 0.0065.freeze
+    DEFAULT_COMMISSION = 0.006.freeze
 
     attr_accessor *VALID_OPTIONS_KEYS
 

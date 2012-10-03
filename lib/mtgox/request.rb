@@ -23,6 +23,7 @@ module MtGox
           request.headers = headers(request.body)
         end
       end
+      puts response
       response.body
     end
 
