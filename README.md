@@ -1,12 +1,12 @@
-# Ruby wrapper for the Mt. Gox Trade API [![Build Status](https://secure.travis-ci.org/sferik/mtgox.png?branch=master)][travis] [![Dependency Status](https://gemnasium.com/sferik/mtgox.png?travis)][gemnasium]
-Mt. Gox allows you to trade US Dollars (USD) for Bitcoins (BTC) or Bitcoins for
-US Dollars.
+# Ruby wrapper for the Mt. Gox Trade API
+Mt. Gox allows you to trade multiple currencies for Bitcoins (BTC) or vice versa.
 
+[pirapira]: http://github.com/pirapira/mtgox
 [travis]: http://travis-ci.org/sferik/mtgox
 [gemnasium]: https://gemnasium.com/sferik/mtgox
 
 ## Installation
-    gem install mtgox
+
 
 ## Alias
 After installing the gem, you can get the current price for 1 BTC in USD by
@@ -15,25 +15,22 @@ typing `btc` in your bash shell simply by setting the following alias:
     alias btc='ruby -r rubygems -r mtgox -e "puts MtGox.ticker.sell"'
 
 ## Documentation
-[http://rdoc.info/gems/mtgox][documentation]
-
-[documentation]: http://rdoc.info/gems/mtgox
 
 ## Usage Examples
     require 'rubygems'
     require 'mtgox'
 
     # Fetch the latest price for 1 BTC in USD
-    puts MtGox.ticker.sell
+    puts MtGox.ticker("USD").sell
 
     # Fetch open asks
-    puts MtGox.asks
+    puts MtGox.asks("USD")
 
     # Fetch open bids
-    puts MtGox.bids
+    puts MtGox.bids("USD")
 
     # Fetch the last 48 hours worth of trades (takes a minute)
-    puts MtGox.trades
+    puts MtGox.trades("USD")
 
     # Certain methods require authentication
     MtGox.configure do |config|
@@ -45,10 +42,13 @@ typing `btc` in your bash shell simply by setting the following alias:
     puts MtGox.balance
 
     # Place a limit order to buy one bitcoin for $0.011
-    MtGox.buy! 1.0, 0.011
+    MtGox.buy! 1.0, 0.011, "USD"
 
     # Place a limit order to sell one bitcoin for $100
-    MtGox.sell! 1.0, 100.0
+    MtGox.sell! 1.0, 100.0, "USD"
+
+    # Fetch your open orders
+    MtGox.orders
 
     # Cancel order #1234567890
     MtGox.cancel 1234567890
@@ -128,6 +128,7 @@ timely fashion. If critical issues for a particular implementation exist at the
 time of a major release, support for that Ruby version may be dropped.
 
 ## Copyright
+Copyright (c) 2012 Yoichi Hirai
 Copyright (c) 2011 Erik Michaels-Ober. See [LICENSE][] for details.
 
-[license]: https://github.com/sferik/mtgox/blob/master/LICENSE.md
+[license]: https://github.com/pirapira/mtgox/blob/master/LICENSE.md
