@@ -141,7 +141,7 @@ module MtGox
     def balance
       ret = {}
       info["Wallets"].each {|currency, details|
-        ret[currency] = details["Balance"]["value"].to_r
+        ret[currency] = details["Balance"]["value"].to_f
       }
       ret
     end
@@ -199,7 +199,7 @@ module MtGox
     #   # Sell one bitcoin for $100
     #   MtGox.sell! 1.0, 100.0
     def sell!(amount, price, currency)
-      parse_orders(post('/api/0/sellBTC.php', {:amount => amount, :price => price, :currency => currency})['orders'])
+      parse_orders(post('/api/0/sellBTC.php', {:amount => amount, :price => price, "Currency" => currency})['orders'])
     end
 
     # Cancel an open order
