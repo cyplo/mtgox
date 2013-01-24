@@ -1,4 +1,5 @@
 require 'faraday/error'
+require 'ostruct'
 require 'mtgox/ask'
 require 'mtgox/bid'
 require 'mtgox/buy'
@@ -144,6 +145,10 @@ module MtGox
         ret[currency] = details["Balance"]["value"].to_f
       }
       ret
+    end
+
+    def history(currency)
+      OpenStruct.new post("/api/0/history_#{currency}.csv")
     end
 
     # Fetch your open orders, both buys and sells, for network efficiency
