@@ -147,7 +147,7 @@ module MtGox
       ret
     end
 
-    def history_btc(currency)
+    def history(currency)
       OpenStruct.new post("api/1/BTC#{currency}/private/trades")
     end
 
