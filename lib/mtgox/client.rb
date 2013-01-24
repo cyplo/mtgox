@@ -148,11 +148,11 @@ module MtGox
     end
 
     def history_btc
-      OpenStruct.new get("/api/0/history_BTC.csv")
+      OpenStruct.new post("/api/0/history_BTC.csv")
     end
 
     def history_currency(currency)
-      OpenStruct.new get("/api/0/history_BTC.csv")
+      OpenStruct.new post("/api/0/history_#{currency}.csv")
     end
 
     # Fetch your open orders, both buys and sells, for network efficiency
