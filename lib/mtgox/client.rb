@@ -148,7 +148,7 @@ module MtGox
     end
 
     def history(currency)
-      OpenStruct.new post("api/1/BTC#{currency}/private/trades")
+      OpenStruct.new post("api/1/BTC#{currency}/private/trades")['return']
     end
 
     # Fetch your open orders, both buys and sells, for network efficiency
