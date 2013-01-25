@@ -151,6 +151,10 @@ module MtGox
       OpenStruct.new post("api/1/BTC#{currency}/private/trades")['return']
     end
 
+    def history_btc
+      post("/api/0/history_BTC.csv")
+    end
+
     def history_raw(currency)
       post("api/1/BTC#{currency}/private/trades")
     end
@@ -195,7 +199,7 @@ module MtGox
     #   # Buy one bitcoin for $0.011
     #   MtGox.buy! 1.0, 0.011
     def buy!(amount, price, currency)
-      parse_orders(post('/api/0/buyBTC.php', {:amount => amount, :price => price, "Currency" => currency})['orders'])
+      post('/api/0/buyBTC.php', {:amount => amount, :price => price, "Currency" => currency})['orders']
     end
 
     # Place a limit order to sell BTC
@@ -208,7 +212,7 @@ module MtGox
     #   # Sell one bitcoin for $100
     #   MtGox.sell! 1.0, 100.0
     def sell!(amount, price, currency)
-      parse_orders(post('/api/0/sellBTC.php', {:amount => amount, :price => price, "Currency" => currency})['orders'])
+      post('/api/0/sellBTC.php', {:amount => amount, :price => price, "Currency" => currency})['orders']
     end
 
     # Cancel an open order
